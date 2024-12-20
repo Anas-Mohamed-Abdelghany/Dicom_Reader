@@ -25,5 +25,4 @@ Comprehensive DICOM file viewer and metadata management system.
 - Image display
 
 ## 🎬 Usage Demo
-
-https://github.com/user-attachments/assets/f5fa8f1f-c767-4e3b-b938-e7c93f628d1c
+https://github.com/user-attachments/assets/6f91c28b-ae9a-4e12-93b6-e3272f6a9cbe
