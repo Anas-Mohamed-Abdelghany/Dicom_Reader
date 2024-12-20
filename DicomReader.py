@@ -1,4 +1,4 @@
-fimport tkinter as tk
+import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
 import pydicom
@@ -71,7 +71,11 @@ def import_dicom():
         messagebox.showinfo("Import Successful", f"Loaded DICOM file: {filepath_or_message}")
         
         # Update metadata combobox with available DICOM elements sorted alphabetically
-        metadata_options = sorted([element.name for element in dicom_data])
+        metadata_options = sorted([
+            element.name
+            for element in dicom_data
+            if element.tag != (0x7FE0, 0x0010)
+        ])
         metadata_combobox['values'] = metadata_options
         
         # Display the DICOM image after successful import
@@ -296,7 +300,7 @@ def explore_group(group_name):
         (0x0028, 0x1053),  # Rescale Slope
         (0x0018, 0x0050),  # Slice Thickness
     ],
-    "Sensetive Data": [
+    "Sensitive Data": [
         # Patient Information
     (0x0010, 0x0010),  # Patient's Name
     (0x0010, 0x0020),  # Patient ID
@@ -329,23 +333,30 @@ def explore_group(group_name):
     (0x0008, 0x1030),  # Study Description
     (0x0020, 0x4000),  # Image Comments
     ],
+    "All" : []
         }
 
         # Get the tags for the selected group
         selected_group_tags = group_tags.get(group_name)
-        if selected_group_tags:
+        if selected_group_tags is not None:
+            if group_name == "All":
+                selected_group_tags = [
+                    element.tag
+                    for element in dicom_data
+                    if element.tag != (0x7FE0, 0x0010)
+                ]
             for tag in selected_group_tags:
                 element = dicom_data.get(tag)
                 if element:
                     value = element.value
                     if "Date" in element.name:
                         formatted_value = format_dicom_date(str(value))
-                        metadata_text.insert(tk.END, f"{element.name}: {formatted_value}\n")
+                        metadata_text.insert(tk.END, f"({hex(element.tag.group)}, {hex(element.tag.element)}) {element.name}: {formatted_value}\n")
                     elif "Time" in element.name:
                         formatted_value = format_dicom_time(str(value))
-                        metadata_text.insert(tk.END, f"{element.name}: {formatted_value}\n")
+                        metadata_text.insert(tk.END, f"({hex(element.tag.group)}, {hex(element.tag.element)}) {element.name}: {formatted_value}\n")
                     else:
-                        metadata_text.insert(tk.END, f"{element.name}: {value}\n")
+                        metadata_text.insert(tk.END, f"({hex(element.tag.group)}, {hex(element.tag.element)}) {element.name}: {value}\n")
         else:
             metadata_text.insert(tk.END, "No metadata available for this group.")
 
@@ -394,12 +405,12 @@ def search_metadata():
             value = element.value
             if "Date" in element.name:
                 formatted_value = format_dicom_date(str(value))
-                metadata_text.insert(tk.END, f"{element.name}: {formatted_value}\n")
+                metadata_text.insert(tk.END, f"({hex(element.tag.group)}, {hex(element.tag.element)}) {element.name}: {formatted_value}\n")
             elif "Time" in element.name:
                 formatted_value = format_dicom_time(str(value))
-                metadata_text.insert(tk.END, f"{element.name}: {formatted_value}\n")
+                metadata_text.insert(tk.END, f"({hex(element.tag.group)}, {hex(element.tag.element)}) {element.name}: {formatted_value}\n")
             else:
-                metadata_text.insert(tk.END, f"{element.name}: {value}\n")
+                metadata_text.insert(tk.END, f"({hex(element.tag.group)}, {hex(element.tag.element)}) {element.name}: {value}\n")
             found_matches = True
 
     if not found_matches:
@@ -445,7 +456,7 @@ if __name__ == "__main__":
             "Equipment Information",
             "Image-Specific Data",
             "Image Information",
-            "Sensetive Data",
+            "Sensitive Data",
         ]
 
         button_frame = tk.Frame(main_container)
@@ -454,6 +465,10 @@ if __name__ == "__main__":
         for group in groups:
             group_button = tk.Button(button_frame, text=group, command=lambda g=group: explore_group(g))
             group_button.pack(side=tk.LEFT, padx=5)
+
+        # Add button to display all data
+        all_data_button = tk.Button(button_frame, text="All Data", command=lambda: explore_group("All"))
+        all_data_button.pack(side=tk.LEFT, padx=5)
 
     # Create group buttons
     create_group_buttons()
